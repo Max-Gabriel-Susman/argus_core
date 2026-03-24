@@ -1,5 +1,4 @@
-builtin_interfaces/Time stamp
-uint32 seq
-uint16 channels
-uint16 sample_rate_hz
-uint8[] data
+uint32 sample
+float32 t
+uint16 channel_count
+unint16[96] channels

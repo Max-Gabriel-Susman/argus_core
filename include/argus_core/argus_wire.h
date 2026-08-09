@@ -3,6 +3,7 @@
 
     #include <stdint.h>
     #include <assert.h>
+    #include <stddef.h>
 
     /* Wire contract betweeen the Zynq safety controller and argus_sensors.
      * Both ends must agree. Bump ARGUS_FRAME_VERSION on any layout change. */

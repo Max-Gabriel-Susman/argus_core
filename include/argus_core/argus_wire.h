@@ -7,10 +7,10 @@
     /* Wire contract betweeen the Zynq safety controller and argus_sensors.
      * Both ends must agree. Bump ARGUS_FRAME_VERSION on any layout change. */
 
-    #define FRAME_MAGIC 0x41524753u /* 'A''R''G''S' */
-    #define FRAME_VERSION 1
-    #define MAX_CHANNELS 96
-    #define UDP_PORT 5005
+    #define ARGUS_FRAME_MAGIC 0x41524753u /* 'A''R''G''S' */
+    #define ARGUS_FRAME_VERSION 1
+    #define ARGUS_MAX_CHANNELS 96
+    #define ARGUS_UDP_PORT 5005
 
     typedef struct __attribute__((packed)) {
         uint32_t magic;
@@ -19,7 +19,7 @@
         uint8_t  version;
         uint8_t  reserved;
         uint16_t channel_count;
-        uint16_t channels[MAX_CHANNELS];
+        uint16_t channels[ARGUS_MAX_CHANNELS];
         uint16_t crc;                    /* CRC-16/CCITT bytes [0,crc) */
     } argus_frame_packet_t;
     

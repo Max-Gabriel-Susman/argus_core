@@ -9,7 +9,7 @@
     /* Wire contract betweeen the Zynq safety controller and argus_sensors.
      * Both ends must agree. Bump ARGUS_FRAME_VERSION on any layout change. */
     #define ARGUS_FRAME_MAGIC 0x41524753u /* 'A''R''G''S' */
-    #define ARGUS_FRAME_VERSION 1
+    #define ARGUS_FRAME_VERSION 2
     #define ARGUS_MAX_CHANNELS 96
     #define ARGUS_UDP_PORT 5005
 
@@ -86,4 +86,19 @@
         uint16_t crc;           /* header bytes [0,crc) then payload */
         /* uint16_t samples[sample_count][channel_count], sample-major */
     } argus_replay_chunk_hdr_t;
+
+    static_assert(sizeof(argus_replay_chunk_hdr_t) == 28, "replay chunk header size drift");
+
+    /* Resumable variant, so a CRC can span a header and a payload that are not
+     * contiguous. crc16_ccitt() above is unchanged; existing callers are unaffected. */
+     static inline uint16_t crc16_ccitt_update(uint16_t crc, const uint8_t *d, size_t n)
+     {
+        for (size_t i = 0; i < n; i++) {
+            crc ^= (uint16_t)d[i] << 8;
+            for (int b = 0; b < 8; b++) {
+                crc = (crc & 0x8000) ? (crc << 1) ^ 0x1021 : (crc << 1);
+            }
+        }
+        return crc;
+     }
 #endif /* ARGUS_CORE_ARGUS_WIRE_H */

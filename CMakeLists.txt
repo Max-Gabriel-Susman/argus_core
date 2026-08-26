@@ -21,7 +21,10 @@ if(BUILD_TESTING)
   # argus_wire.h is the vendored ABI contract. Its formatting is shared with
   # bare-metal copies uncrustify never sees, so reformatting here would force
   # a re-vendor for cosmetic reasons and put the copies out off sync.
-  set(AMENT_LINT_AUTO_FILE_EXCLUDE include/argus_core/argus_wire.h)
+  set(AMENT_LINT_AUTO_FILE_EXCLUDE
+    include/argus_core/argus_wire.h
+    include/argus_core/argus_replay_client.h
+  )
 
   ament_lint_auto_find_test_dependencies()
 

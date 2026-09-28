@@ -1,5 +1,7 @@
 #include <cstddef>
+#include <random>
 #include <tuple>
+#include <vector>
 #include <gtest/gtest.h>
 
 #include "argus_core/argus_wire.h"
@@ -51,6 +53,33 @@ TEST(WireContract, IncrementalCrcMatchesOneShot)
   crc = crc16_ccitt_update(crc, check, 4);
   crc = crc16_ccitt_update(crc, check + 4, 5);
   EXPECT_EQ(crc, crc16_ccitt(check, sizeof(check)));
+}
+
+TEST(WireContract, TableCrcMatchesBitwise)
+{
+  /* The table-driven CRC is what every end runs; the bit-serial one is the
+   * reference. Random buffers up to a full replay chunk and past it, fixed
+   * seed, and a random split for the resumable form. */
+  std::mt19937 rng(0x41524753u);
+  std::uniform_int_distribution<int> byte(0, 255);
+  std::uniform_int_distribution<size_t> length(0, 1600);
+
+  for (int trial = 0; trial < 2000; ++trial) {
+    std::vector<uint8_t> buf(length(rng));
+    for (auto & b : buf) {
+      b = static_cast<uint8_t>(byte(rng));
+    }
+    const uint8_t * d = buf.data();
+    const size_t n = buf.size();
+
+    ASSERT_EQ(crc16_ccitt(d, n), crc16_ccitt_bitwise(d, n)) << "n=" << n;
+
+    const size_t split = n ? std::uniform_int_distribution<size_t>(0, n)(rng) : 0;
+    const uint16_t seed = static_cast<uint16_t>(rng());
+    uint16_t table = crc16_ccitt_update(seed, d, split);
+    table = crc16_ccitt_update(table, d + split, n - split);
+    ASSERT_EQ(table, crc16_ccitt_update_bitwise(seed, d, n)) << "n=" << n;
+  }
 }
 
 TEST(WireContract, ReplayChunkFitsInOneDatagram)

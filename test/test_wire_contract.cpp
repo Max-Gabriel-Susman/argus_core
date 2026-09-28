@@ -11,6 +11,10 @@ static_assert(
   std::tuple_size<decltype(argus_core::msg::NeuralFrame::channels)>::value ==
   ARGUS_MAX_CHANNELS, "NeuralFrame.msg channel array disagrees with ARGUS_MAX_CHANNELS"
 );
+static_assert(
+  std::tuple_size<decltype(argus_core::msg::NeuralFrame::power)>::value ==
+  ARGUS_MAX_CHANNELS, "NeuralFrame.msg power array disagrees with ARGUS_MAX_CHANNELS"
+);
 
 TEST(WireContract, FrameFieldOffsets)
 {
@@ -20,7 +24,16 @@ TEST(WireContract, FrameFieldOffsets)
   EXPECT_EQ(offsetof(argus_frame_packet_t, version), 12u);
   EXPECT_EQ(offsetof(argus_frame_packet_t, channel_count), 14u);
   EXPECT_EQ(offsetof(argus_frame_packet_t, channels), 16u);
-  EXPECT_EQ(offsetof(argus_frame_packet_t, crc), 208u);
+  EXPECT_EQ(offsetof(argus_frame_packet_t, power), 208u);
+  EXPECT_EQ(offsetof(argus_frame_packet_t, crc), 592u);
+  EXPECT_EQ(sizeof(argus_frame_packet_t), 594u);
+}
+
+TEST(WireContract, FrameVersionCarriesPower)
+{
+  /* v3 added power[]; a receiver built against this header must not
+   * accept anything older. */
+  EXPECT_EQ(ARGUS_FRAME_VERSION, 3);
 }
 
 TEST(WireContract, Crc16CcittFalse)

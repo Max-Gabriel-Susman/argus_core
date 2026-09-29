@@ -2,6 +2,12 @@
 
 Argus Core is the shared interface package for the Argus Cybernetics stack.
 
+The whole stack, and the one command that runs it on the board, is described in
+[argus_bringup/README.md](https://github.com/Max-Gabriel-Susman/argus_bringup/blob/main/README.md).
+Build and test this package from `~/Documents/argus_ws` with
+`colcon build --packages-select argus_core && colcon test --packages-select argus_core`.
+It changes the wire, so after a change rebuild every package that depends on it.
+
 It exists to centralize common resources that need to be reused across packages, especially shared ROS 2 and micro-ROS interfaces such as message definitions, data layouts, and other core communication contracts. The goal is to make data exchange between embedded and host-side components more consistent, maintainable, and easier to evolve over time.
 
 ## Purpose
@@ -10,8 +16,10 @@ As the Argus system grows, multiple packages need to agree on how information is
 
 This package is intended to support communication between components such as:
 
-- `argus_neural_interface_bridge`, which publishes neural data and listens for control commands on the bridge topics :contentReference[oaicite:0]{index=0}
-- `argus_inference`, which consumes neural features, performs intent decoding, and publishes control output on `/cmd_vel` :contentReference[oaicite:1]{index=1}
+- the Cortex-A9 firmware in `argus_safety_controller`, which sends feature frames over UDP (it vendors `argus_wire.h` byte-identical)
+- `argus_sensors`' `neural_udp_receiver`, which parses those frames into `NeuralFrame` on `/argus/neural_interface_bridge/neural_data`
+- `argus_sim`'s `dataset_relay_node`, which serves replay chunks to the firmware (the replay half of `argus_wire.h`)
+- `argus_inference`, which consumes neural features, performs intent decoding, and publishes control output on `/cmd_vel`
 
 ## Responsibilities
 
@@ -28,7 +36,7 @@ In general, if a type or interface is used by more than one package and represen
 
 The Argus project includes both embedded and host-side components. Those components need a reliable, well-defined way to exchange structured data.
 
-For example, the current bridge application publishes neural data on `/argus/neural_interface_bridge/neural_data` and accepts commands on `/argus/neural_interface_bridge/control`, while the inference node builds features from neural input and maps decoded intent into motion commands. Centralizing shared message definitions in Argus Core helps keep those components aligned as the interface becomes more structured and moves beyond ad hoc string payloads. :contentReference[oaicite:2]{index=2} :contentReference[oaicite:3]{index=3}
+For example, `neural_udp_receiver` publishes `NeuralFrame` on `/argus/neural_interface_bridge/neural_data`, and the inference node builds features from each frame and maps decoded intent into motion commands. Centralizing the wire format and the message in Argus Core keeps those components aligned.
 
 ## Design goals
 
@@ -40,13 +48,15 @@ Argus Core is designed to be:
 - **Embedded-aware**: interfaces should be practical for micro-ROS and resource-constrained targets
 - **Scalable**: the package should support future movement from simple proof-of-concept messages to richer structured telemetry
 
-## Planned contents
+## Contents
 
-Examples of items that may live in Argus Core include:
-
-- `NeuralFrame`-style messages for structured neural replay data
-- shared constants or conventions for channel layout and sample indexing
-- future common interfaces used by bridge, inference, telemetry, or control packages
+- `msg/NeuralFrame.msg`: `sample`, `t`, `channel_count`, `uint16[96] channels`
+  (threshold crossings per 50 ms bin) and `uint32[96] power` (spike-band
+  mean-square per bin)
+- `include/argus_core/argus_wire.h`: the UDP telemetry frame at
+  `ARGUS_FRAME_VERSION 3` (594 bytes, magic `ARGS`, table-driven CRC-16/CCITT),
+  and the replay request/chunk protocol on port 5010
+- `include/argus_core/argus_replay_client.h`: the transport-agnostic replay client, shared by the firmware and the host test client
 
 ## Scope
 
@@ -71,4 +81,4 @@ By keeping those shared definitions in one place, Argus Core reduces duplication
 
 ## Status
 
-Argus Core is being introduced as part of the transition from simple proof-of-concept message passing toward more structured shared interfaces for the Argus Cybernetics system. The current surrounding stack already includes a neural bridge node and an inference node, and this package is intended to become the shared foundation between those components as the architecture matures. :contentReference[oaicite:4]{index=4} :contentReference[oaicite:5]{index=5}
+Argus Core is the shared foundation of the running stack. Frame version 3 (counts and power) is what the firmware sends on the board as of 2026-09-28.
